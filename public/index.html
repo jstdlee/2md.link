@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2md.link - URL to Markdown</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-secondary: #111111;
+      --border: #333333;
+      --text: #00ff41;
+      --text-dim: #00cc33;
+      --accent: #00ff41;
+      --accent-glow: rgba(0, 255, 65, 0.15);
+      --error: #ff3333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 1rem;
+      background-image:
+        radial-gradient(ellipse at top, rgba(0,255,65,0.03) 0%, transparent 50%),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.01) 2px, rgba(0,255,65,0.01) 4px);
+    }
+    .container { max-width: 48rem; margin: 0 auto; }
+    .ascii-border {
+      border: 2px solid var(--border);
+      background: var(--bg-secondary);
+      box-shadow: 0 0 20px var(--accent-glow), inset 0 0 20px rgba(0,0,0,0.5);
+    }
+    .ascii-header {
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .ascii-title {
+      font-size: 1rem;
+      font-weight: 600;
+      text-shadow: 0 0 10px var(--accent);
+      letter-spacing: 0.1em;
+    }
+    .ascii-badge {
+      font-size: 0.625rem;
+      padding: 0.125rem 0.5rem;
+      border: 1px solid var(--text-dim);
+      color: var(--text-dim);
+    }
+    .ascii-content { padding: 1rem; }
+    .ascii-input {
+      width: 100%;
+      background: #000;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ascii-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+    .ascii-input::placeholder { color: #444; }
+    .ascii-btn {
+      width: 100%;
+      margin-top: 0.75rem;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 0.625rem 1rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: all 0.2s;
+    }
+    .ascii-btn:hover:not(:disabled) {
+      background: var(--accent);
+      color: #000;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .ascii-btn:disabled {
+      border-color: #444;
+      color: #444;
+      cursor: not-allowed;
+    }
+    .ascii-error {
+      background: rgba(255,51,51,0.1);
+      border: 1px solid var(--error);
+      color: var(--error);
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      display: none;
+    }
+    .ascii-loading {
+      color: var(--text-dim);
+      padding: 2rem;
+      text-align: center;
+      display: none;
+      font-size: 0.875rem;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0.5; } }
+    .ascii-result {
+      display: none;
+      flex-direction: column;
+      margin-top: 1rem;
+    }
+    .ascii-result-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .ascii-result-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 0.375rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .ascii-result-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .ascii-info {
+      font-size: 0.625rem;
+      padding: 0.125rem 0.5rem;
+      border: 1px solid var(--border);
+      color: #666;
+    }
+    .ascii-textarea {
+      width: 100%;
+      min-height: 50vh;
+      background: #000;
+      border: none;
+      color: var(--text-dim);
+      padding: 1rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+    }
+    .ascii-footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.625rem;
+      color: #444;
+      border-top: 1px solid var(--border);
+    }
+    /* Tabs */
+    .tabs-container { margin-top: 1rem; }
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #666;
+      padding: 0.5rem 1rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .tab-btn:hover { color: var(--text-dim); }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+    .tab-content {
+      display: none;
+      padding: 0.75rem;
+      background: #000;
+      border: 1px solid var(--border);
+      border-top: none;
+    }
+    .tab-content.active { display: block; }
+    .code-block {
+      font-size: 0.7rem;
+      line-height: 1.5;
+      color: var(--text-dim);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .code-block .keyword { color: #ff79c6; }
+    .code-block .string { color: #f1fa8c; }
+    .code-block .comment { color: #6272a4; }
+    @media (max-width: 640px) {
+      body { padding: 0.5rem; }
+      .ascii-content { padding: 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="ascii-border">
+      <div class="ascii-header">
+        <span class="ascii-title">&gt; 2MD.LINK_</span>
+        <span class="ascii-badge">v1.0</span>
+      </div>
+      <div class="ascii-content">
+        <input type="text" id="urlInput" class="ascii-input" placeholder="example.com or https://..." autocomplete="off">
+        <button id="convertBtn" class="ascii-btn">[ CONVERT TO MARKDOWN ]</button>
+        <div id="error" class="ascii-error"></div>
+        <div id="loading" class="ascii-loading">&gt; FETCHING DATA...</div>
+        <div id="result" class="ascii-result">
+          <div class="ascii-result-header">
+            <button id="copyBtn" class="ascii-result-btn">COPY</button>
+            <button id="downloadBtn" class="ascii-result-btn">SAVE</button>
+            <span id="resultInfo" class="ascii-info"></span>
+          </div>
+          <textarea id="markdownOutput" class="ascii-textarea" readonly></textarea>
+        </div>
+      </div>
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="curl">curl</button>
+          <button class="tab-btn" data-tab="python">python</button>
+          <button class="tab-btn" data-tab="typescript">typescript</button>
+        </div>
+        <div id="tab-curl" class="tab-content active">
+          <div class="code-block"><span class="comment"># Convert URL to markdown via API</span>
+curl -X POST http://localhost:3001/api/convert \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com"}'</div>
+        </div>
+        <div id="tab-python" class="tab-content">
+          <div class="code-block"><span class="comment"># Python request</span>
+<span class="keyword">import</span> requests
+
+url = <span class="string">"http://localhost:3001/api/convert"</span>
+data = {<span class="string">"url"</span>: <span class="string">"https://example.com"</span>}
+r = requests.post(url, json=data)
+<span class="keyword">print</span>(r.json()[<span class="string">"markdown"</span>])</div>
+        </div>
+        <div id="tab-typescript" class="tab-content">
+          <div class="code-block"><span class="comment">// TypeScript/Fetch</span>
+<span class="keyword">const</span> res = <span class="keyword">await</span> fetch(<span class="string">"http://localhost:3001/api/convert"</span>, {
+  method: <span class="string">"POST"</span>,
+  headers: { <span class="string">"Content-Type"</span>: <span class="string">"application/json"</span> },
+  body: JSON.stringify({ url: <span class="string">"https://example.com"</span> })
+});
+<span class="keyword">const</span> { markdown } = <span class="keyword">await</span> res.json();</div>
+        </div>
+      </div>
+      <div class="ascii-footer">FREE: 10/min | PRO: 60/min ($5/mo)</div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var urlInput = document.getElementById('urlInput');
+      var convertBtn = document.getElementById('convertBtn');
+      var resultDiv = document.getElementById('result');
+      var errorDiv = document.getElementById('error');
+      var loadingDiv = document.getElementById('loading');
+      var markdownOutput = document.getElementById('markdownOutput');
+      var resultInfo = document.getElementById('resultInfo');
+      var copyBtn = document.getElementById('copyBtn');
+      var downloadBtn = document.getElementById('downloadBtn');
+      var tabBtns = document.querySelectorAll('.tab-btn');
+      var tabContents = document.querySelectorAll('.tab-content');
+
+      // Tab switching - use getAttribute for better compatibility
+      tabBtns.forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          var tabName = btn.getAttribute('data-tab');
+          if (!tabName) return;
+
+          // Remove active from all buttons and contents
+          tabBtns.forEach(function(b) { b.classList.remove('active'); });
+          tabContents.forEach(function(c) { c.classList.remove('active'); });
+
+          // Add active to clicked button
+          btn.classList.add('active');
+
+          // Add active to corresponding content
+          var tabContent = document.getElementById('tab-' + tabName);
+          if (tabContent) {
+            tabContent.classList.add('active');
+          }
+        });
+      });
+
+      function fixUrlPrefix(s) {
+        if (!s || typeof s !== 'string') return s;
+
+        // Remove dangerous characters
+        s = s.replace(/[<>"'()]/g, '');
+
+        // Remove any protocol-like prefix
+        // This pattern handles: http://, https://, htp://, htt://, httpp://, httpps://, ttp://, tp://, etc.
+        var patterns = [
+          /^(?:h[a-z]*)?t(?:p(?:s)?[a-z]*){1,2}:\/?\/?/i,
+          /^(?:h[a-z]*)?tp[a-z]*:\/?\/?/i,
+          /^t[pza-z]+:\/?\/?/i,
+          /^h[a-z]+:\/?\/?/i,
+        ];
+
+        for (var i = 0; i < patterns.length; i++) {
+          while (patterns[i].test(s)) {
+            s = s.replace(patterns[i], '');
+          }
+        }
+
+        // Also handle if user typed just "://"
+        s = s.replace(/^:\/\//, '');
+
+        // Also handle stray slashes at the beginning
+        s = s.replace(/^\/+/, '');
+
+        // Ensure we have proper protocol
+        s = 'https://' + s;
+
+        // Clean up any double/triple slashes
+        s = s.replace(/^https:\/+/i, 'https://');
+
+        return s;
+      }
+
+      function parseUrlInput(input) {
+        if (!input || typeof input !== 'string') return null;
+        var s = input.trim();
+        if (!s) return null;
+        s = fixUrlPrefix(s);
+        if (s.indexOf('://') > 0) {
+          try { return new URL(s); } catch (e) { return null; }
+        }
+        try { return new URL('https://' + s); } catch (e) {}
+        try { return new URL('http://' + s); } catch (e) {}
+        return null;
+      }
+
+      function doConvert() {
+        var input = urlInput.value;
+        if (!input) { showError('ERROR: Please enter a URL'); return; }
+        var parsed = parseUrlInput(input);
+        if (!parsed) { showError('ERROR: Invalid URL - ' + input); return; }
+        hideAll();
+        loadingDiv.style.display = 'block';
+        convertBtn.disabled = true;
+        convertBtn.textContent = '[ PROCESSING... ]';
+
+        fetch('/api/convert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: parsed.href })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          loadingDiv.style.display = 'none';
+          convertBtn.disabled = false;
+          convertBtn.textContent = '[ CONVERT TO MARKDOWN ]';
+          if (data.error) { showError('ERROR: ' + data.error); return; }
+          var info = (data.length || 0) + ' chars';
+          if (data.redirected) info += ' | redirected';
+          resultInfo.textContent = info;
+          markdownOutput.value = data.markdown || '';
+          resultDiv.style.display = 'flex';
+        })
+        .catch(function(err) {
+          loadingDiv.style.display = 'none';
+          convertBtn.disabled = false;
+          convertBtn.textContent = '[ CONVERT TO MARKDOWN ]';
+          showError('ERROR: ' + err.message);
+        });
+      }
+
+      function showError(msg) {
+        errorDiv.textContent = msg;
+        errorDiv.style.display = 'block';
+        loadingDiv.style.display = 'none';
+      }
+      function hideAll() {
+        errorDiv.style.display = 'none';
+        resultDiv.style.display = 'none';
+      }
+
+      // Attach event handlers - ensure proper binding
+      convertBtn.onclick = function(e) {
+        e.preventDefault();
+        doConvert();
+      };
+      urlInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          doConvert();
+        }
+      });
+
+      downloadBtn.addEventListener('click', function() {
+        var blob = new Blob([markdownOutput.value], { type: 'text/markdown' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'document.md';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+
+      copyBtn.addEventListener('click', function() {
+        markdownOutput.select();
+        document.execCommand('copy');
+        copyBtn.textContent = 'COPIED!';
+        setTimeout(function() { copyBtn.textContent = 'COPY'; }, 2000);
+      });
+    });
+  </script>
+</body>
+</html>
